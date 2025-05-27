@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Прогноз погоды</title>
+    <style>
+        #suggestions {
+            position: absolute;
+            background: white;
+            border: 1px solid #ccc;
+            max-width: 300px;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            z-index: 1000;
+        }
+        #suggestions li {
+            padding: 8px;
+            cursor: pointer;
+        }
+        #suggestions li:hover {
+            background-color: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Погода</h1>
+    <form method="get" onsubmit="return validateForm()">
+        <input type="text" id="city" name="city" oninput="autocomplete()"  placeholder="Введите город">
+        <input type="hidden" id="latitude" name="latitude">
+        <input type="hidden" id="longitude" name="longitude">
+        <button type="submit">Показать</button>
+        <ul id="suggestions"></ul>
+    </form>    
+
+    {% if weather %}
+        <h2>Погода в {{ city }}</h2>
+        <p>Температура: {{ weather.current_weather.temperature }} °C</p>
+        <p>Ветер: {{ weather.current_weather.windspeed }} км/ч</p>
+    {% endif %}
+
+    <script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const input = document.getElementById("city");
+        input.addEventListener("input", autocomplete);
+    });
+
+    async function autocomplete() {
+        const query = document.getElementById("city").value;
+        const suggestions = document.getElementById("suggestions");
+        suggestions.innerHTML = "";
+
+        if (query.length < 2) return;
+
+        try {
+            const response = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}`);
+            const data = await response.json();
+
+            if (data.results) {
+                data.results.forEach(city => {
+                    const li = document.createElement("li");
+                    li.textContent = `${city.name}, ${city.country}`;
+                    li.onclick = () => {
+                        document.getElementById("city").value = city.name;
+                        document.getElementById("latitude").value = city.latitude;
+                        document.getElementById("longitude").value = city.longitude;
+                        suggestions.innerHTML = "";
+                    };
+                    suggestions.appendChild(li);
+                });
+            }
+        } catch (err) {
+            console.error("Ошибка автодополнения:", err);
+        }
+    }
+</script>
+
+</body>
+</html>
